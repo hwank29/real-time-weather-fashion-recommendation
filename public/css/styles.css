@@ -4,6 +4,7 @@ html {
 }
 body {
     margin:0;
+    background: #fafafa;
 }
 
 header nav li {
@@ -36,9 +37,53 @@ header nav li:last-child {
     text-decoration: underline;
 }
 
+
+
 .title-list {
     display: inline-flex;
     font-size: 2rem;
     font: bold;
     justify-content: start;
-}
+ }
+ .register-h1 login-h1{
+  text-align: center;
+ }
+
+  form{
+    width: 400px;
+    margin: 50px auto 0 auto;
+    padding: 30px;
+    box-shadow: 1px 2px 3px rgba(0,0,0,0.1);
+    border-radius: 10px;
+    background: rgb(182, 226, 250);
+  }
+  input{
+    padding: 10px 12px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    font-size: 1em;
+    width: 90%;
+  }
+  label{
+    display: block;
+    margin: 20px 0 10px;
+  }
+  button{
+    border-radius: 36px;
+    background: #FEE996;
+    margin-top: 20px;
+    border:0;
+    text-transform: uppercase;
+    font-weight: 700;
+    font-size: 1.2em;
+    display: block;
+    padding: 10px 16px;
+    letter-spacing: 2px;
+    cursor: pointer;
+  }
+  .error{
+    color: #ca0342;
+    margin: 10px 2px;
+    font-size: 0.8em;
+    font-weight: bold;
+  }

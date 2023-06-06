@@ -1,28 +1,34 @@
-require('dotenv').config();
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const mysql = require('mysql');
+const cookieParser = require('cookie-parser');
+require('dotenv').config();
 
-router.use(express.json);
+const mysql = require('mysql');
+const { start } = require('repl');
+
+router.use(express.static("public"));
+router.use(express.json());
+router.use(cookieParser());
 
 // Create connection to MySQL AWS RDS 
-const db = mysql.createPool({
+const db = mysql.createConnection({
     host: process.env.aws_host_endpoint,
     port: process.env.port,
     user: process.env.user,
     password: process.env.password,
     database: process.env.database
 });
+
+
 // Connect to AWS RDS
 db.connect((err) => {
     if (err) {
-        console.log(err.message);
-        return ;
-    }
-    console.log("Database Connected!");
-});
+      console.log(err.message);
+      return;
+    }  
+  });
 
 // Generate jwt lasting 30 minutes
 function generateAccessToken(user) {
@@ -32,7 +38,10 @@ function generateAccessToken(user) {
 function generateRefreshToken(user) {
     return jwt.sign(user, process.env.REFRESH_TOKEN_SECRET);
 }
+// Get user info from DB
+function getUser() {
 
+}
 // Middleware to verify jwt
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
@@ -50,7 +59,7 @@ function authenticateToken(req, res, next) {
 
 
 // Login page
-router.get('/', authenticateToken, (req, res) => {
+router.get('/', (req, res) => {
     res.render('login/login', {title: 'loginPage'})
 });
 
@@ -63,10 +72,10 @@ router.post('/', async (req, res) => {
     
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
-    db.query(pushRT, (err, result) => {
-        if (err) throw err;
+    // db.query(pushRT, (err, result) => {
+    //     if (err) throw err;
 
-    })
+    // })
 
     res.json({ accessToken: accessToken, refreshToken: refreshToken });  
 
@@ -83,29 +92,66 @@ router.post('/', async (req, res) => {
     // }
 })
 
+router.post('/token', authenticateToken, (req, res) => {
+    const refreshToken = req.body.token
+});
+
 router.get('/register', (req, res) => {
     res.render('login/register', {title: 'reigsterPage'});
 });
 // Query list
 // When using First time 
-const startQuery = `CREATE DATABASE IF NOT EXISTS users;
+const startQuery = `
+            CREATE DATABASE IF NOT EXISTS users;
             USE users;
             CREATE TABLE IF NOT EXISTS users_info (
                 user_id INT PRIMARY KEY AUTO_INCREMENT,
                 created_date date, 
                 name VARCHAR(50),
-                email VARCHAR(50),
+                email VARCHAR(50) UNIQUE,
                 encrypted_password VARCHAR(500));
             CREATE TABLE IF NOT EXISTS refresh_token (
                 refreshtoken_id INT PRIMARY KEY AUTO_INCREMENT,
                 refreshtoken VARCHAR(500)
             );`;
+// // Create the 'users' database
+// db.query('CREATE DATABASE IF NOT EXISTS users', (err, result) => {
+// if (err) throw err;
+
+// // Switch to the 'users' database
+// db.query('USE users', (err, result) => {
+//     if (err) throw err;
+
+//     // Create the 'users_info' table
+//     db.query(`CREATE TABLE IF NOT EXISTS users_info (
+//     user_id INT PRIMARY KEY AUTO_INCREMENT,
+//     created_date date, 
+//     name VARCHAR(50),
+//     email VARCHAR(50) UNIQUE,
+//     encrypted_password VARCHAR(500)
+//     )`, (err, result) => {
+//     if (err) throw err;
+
+//     // Create the 'refresh_token' table
+//     db.query(`CREATE TABLE IF NOT EXISTS refresh_token (
+//         refreshtoken_id INT PRIMARY KEY AUTO_INCREMENT,
+//         refreshtoken VARCHAR(500)
+//     )`, (err, result) => {
+//         if (err) throw err;
+
+//         console.log('Tables created successfully!');
+//         // Close the connection
+//         db.end();
+//     });
+//     });
+// });
+// });
 // When matching name and password in RDS
-const matchQuery = `SELECT EXISTS(SELECT 1 FROM users WHERE email = ${email} and password = ${password}) AS match_found;`;
+// const matchQuery = `SELECT EXISTS(SELECT 1 FROM users WHERE email = ${email} and password = ${password}) AS match_found;`;
 // When pushing refreshtoken
-const pushRT = `USE users;
-               INSERT INTO refresh_token (refreshtoken)
-               VALUES (${refreshtoken})`;
+// const pushRT = `USE users;
+//                INSERT INTO refresh_token (refreshtoken)
+//                VALUES (${refreshtoken})`; 
 
 
 const today = new Date();
@@ -130,13 +176,27 @@ const day = today.getDate();
 
 // API endpoint for user registration
 router.post('/register', async (req, res) => {
-    const { name, email, password } = req.body;
-
+    const { name, email, password, age, sex } = req.body;
+    // validate email
+    if (!validator.isEmail(email)) {
+        req.flash('warning', 'Email is invalid');
+        res.redirect('/login/register');};
+    if (!password.length > 8) {
+        req.flash('warning', 'Password Length has to be greater than 8');
+        res.redirect('/login/register');};
     try {
         // Hash the password with bcrypt
         const hashedPassword = await bcrypt.hash(password, 10);
-        const query = `INSERT INTO users_info (created_date, name, email, encrypted_password) 
-               VALUES ('${year}-${month}-${day}', '${name}', '${email}', '${hashedPassword}');`
+        const query = `INSERT INTO users_info (created_date, name, email, encrypted_password, age, sex ) 
+               VALUES ('${year}-${month}-${day}', '${name}', '${email}', '${hashedPassword}', '${age}', '${sex}');`
+        db.query('USE users', (err, result) => {
+            if (err) throw err;
+            db.query(query, (err,result) => {
+                if (err) throw err;   
+                console.log('Successfully done')
+            });
+        });
+        req.flash('success', 'You are registered!');
         res.redirect('/login');
     } catch {
         res.redirect('/login/register');
