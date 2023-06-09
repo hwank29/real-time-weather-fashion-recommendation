@@ -9,15 +9,23 @@ function sexCustom() {
     }
 }
 function checkInput() {
+    event.preventDefault();
     const age = document.getElementById("age").value;
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
-    if (!Number.isInteger(Number(age)) || !validator.isEmail(email) || !password.length > 6) {
-      alert("Wrong Input Format. Check Again. Hint: \n Email in email format \n Age in input \n password length longer than 6");
+    if (!Number.isInteger(Number(age)) || !validator.isEmail(email) || password.length <= 6) {
+        alert("Wrong Input Format. Check Again. Hint: \n Email in email format \n Age in input \n password length longer than 6");
+        return false;
     }
     else {
-        alert("You are registered!")
+        alert("You are registered!");
+        return true;
+    
+
     }}
+
+document.getElementById("myForm").addEventListener("submit", asyncsubmit);
+
 document.addEventListener('DOMContentLoaded', function() {
     // Get the list element
     const myList = document.getElementById('navbar-list');

@@ -4,7 +4,8 @@
     "dotenv": "^16.1.3",
     "ejs": "^3.1.9",
     "express": "^4.18.2",
-    "node": "^20.2.0"
+    "node": "^20.2.0",
+    "node-notifier": "^10.0.1"
   },
   "name": "real_time_weather-fashion-recommendation",
   "version": "1.0.0",

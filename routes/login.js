@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
 const cookieParser = require('cookie-parser');
+const notifier = require('node-notifier');
 require('dotenv').config();
 
 const mysql = require('mysql2');
@@ -235,7 +236,11 @@ router.post('/register', async (req, res) => {
         const count = result[0].count;
 
         if (count > 0) {
-            req.
+            notifier.notify({
+                title: 'Alert',
+                message: 'This email already registered',
+            });
+              
             res.redirect('/login/register');
         } else {
             res.redirect('/login');}
