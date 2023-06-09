@@ -2,12 +2,21 @@ const path = require('path');
 const express = require('express');
 const mysql = require('mysql');
 const bcrypt = require('bcrypt')
+const flash = require('express-flash')
+const session = require('express-session');
+require('dotenv').config();
 const users = [];
 
-// create app var with express
+// create app var with express and middleware function
 const app = express();
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true}));
+app.use(session({
+  secret: process.env.secret_key,
+  resave: false,
+  saveUninitialized: true
+}));
+app.use(flash());
 
 // // Set MySQL Configuration
 // const db = mysql.createConnection({
@@ -39,6 +48,7 @@ app.get('/', (req, res) => {
 const loginRouter = require('./routes/login');
 // import router from routes/user.js
 const userRouter = require('./routes/users');
+const { configDotenv } = require('dotenv');
 app.use('/login', loginRouter);
 app.use('/users', userRouter);
 

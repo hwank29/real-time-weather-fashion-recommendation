@@ -1,5 +1,5 @@
-function sex_custom() {
-    const select = document.getElementById("sex_custom_input");
+function sexCustom() {
+    const select = document.getElementById("sex");
     const customInput = document.getElementById("customInput");
 
     if (select.value === "others") {
@@ -8,6 +8,16 @@ function sex_custom() {
         customInput.style.display = "none";
     }
 }
+function checkInput() {
+    const age = document.getElementById("age").value;
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    if (!Number.isInteger(Number(age)) || !validator.isEmail(email) || !password.length > 6) {
+      alert("Wrong Input Format. Check Again. Hint: \n Email in email format \n Age in input \n password length longer than 6");
+    }
+    else {
+        alert("You are registered!")
+    }}
 document.addEventListener('DOMContentLoaded', function() {
     // Get the list element
     const myList = document.getElementById('navbar-list');

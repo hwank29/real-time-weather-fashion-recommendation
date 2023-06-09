@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const validator = require('validator');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
-const mysql = require('mysql');
+const mysql = require('mysql2');
 const { start } = require('repl');
 
 router.use(express.static("public"));
@@ -28,6 +29,13 @@ db.connect((err) => {
       console.log(err.message);
       return;
     }  
+    else {
+        console.log('Database Connected');
+        db.query('SELECT * FROM users.users_info;', (err, result) => {
+            if (err) console.log(err)
+            console.log(result)
+        })
+    }
   });
 
 // Generate jwt lasting 30 minutes
@@ -38,21 +46,33 @@ function generateAccessToken(user) {
 function generateRefreshToken(user) {
     return jwt.sign(user, process.env.REFRESH_TOKEN_SECRET);
 }
-// Get user info from DB
-function getUser() {
+// // Get user info from DB
+// function getUser(email, password) {
+//     // When matching name and password in RDS
+//     const matchQuery = `SELECT EXISTS(SELECT 1 FROM users.users_info WHERE email = ${email} and password = ${password}) AS match_found;`;}
 
-}
+
+
 // Middleware to verify jwt
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]
-    if (token == null) return res.sendStatus(401);
+    if (!token) return res.sendStatus(401);
 
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
         // Invalid Token
         if (err) return res.sendStatus(403);
+        // Check if the access token is expired or about to expire (e.g., within a certain threshold)
+        const currentTimestamp = Math.floor(Date.now() / 1000); // Convert current time to seconds
+        const expirationTimestamp = user.exp; // expiration time left
+        const tokenExpiryThreshold = 60; // Renew token if it's going to expire in 60 seconds or less
 
-        req.user = user;
+        if (expirationTimestamp - currentTimestamp <= tokenExpiryThreshold) {
+            // Access token is about to expire or has expired
+            const accessToken = generateAccessToken(user);
+            res.setHeader('Authorization', accessToken);
+        }
+      
         next();
     })
 }
@@ -64,32 +84,33 @@ router.get('/', (req, res) => {
 });
 
 // Login verfication NOT encrypted
-router.post('/', async (req, res) => {
+router.post('/', (req, res) => {
     const {name, email, password} = req.body;
-    const user = {name: name,
-                  email: email, 
+    const user = {email: email, 
                   password: password};
+    const getUserQuery = `SELECT * FROM users.users_info WHERE email = '${email}'`;
+    // Get user info from RDS that matches 
+    connection.query(getUserQuery, (err, result) => {
+        if (error) {
+          // Handle the error
+          console.error(error);
+          return res.status(500).send('Error executing query');
+        }
+        const userInfo = result;
+    })
+    
+    bcrypt.compare(password, user.password, (err, result) => {
+        if (err) {
+            return res.status(500).json({ message: 'Internal server error' });
+        }
+        if (!result) {
+            return res.status(401).json({ message: 'Authentication failed' });
+        }})
     
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
-    // db.query(pushRT, (err, result) => {
-    //     if (err) throw err;
-
-    // })
 
     res.json({ accessToken: accessToken, refreshToken: refreshToken });  
-
-    // const user = users.find(user => user.name = req.body.name);
-    // if (user == null) {
-    //     return res.status(400).send("No User Found");
-    // };
-    // try {
-    //     if (await bcrypt.compare(req.body.password, user.password)) {
-    //         res.send('Success');
-    //     };
-    // } catch {
-    //     res.status(500).send();
-    // }
 })
 
 router.post('/token', authenticateToken, (req, res) => {
@@ -146,8 +167,7 @@ const startQuery = `
 //     });
 // });
 // });
-// When matching name and password in RDS
-// const matchQuery = `SELECT EXISTS(SELECT 1 FROM users WHERE email = ${email} and password = ${password}) AS match_found;`;
+
 // When pushing refreshtoken
 // const pushRT = `USE users;
 //                INSERT INTO refresh_token (refreshtoken)
@@ -176,30 +196,53 @@ const day = today.getDate();
 
 // API endpoint for user registration
 router.post('/register', async (req, res) => {
-    const { name, email, password, age, sex } = req.body;
-    // validate email
-    if (!validator.isEmail(email)) {
-        req.flash('warning', 'Email is invalid');
-        res.redirect('/login/register');};
-    if (!password.length > 8) {
-        req.flash('warning', 'Password Length has to be greater than 8');
-        res.redirect('/login/register');};
+    const { name, email, password, age} = req.body;
+    if (req.body.sex == "others") {
+        sex = req.body.customValue
+    } else {
+        sex = req.body.sex
+    }
+
     try {
+        if (Number.isInteger(Number(age)) && validator.isEmail(email) && password.length > 6) {
         // Hash the password with bcrypt
         const hashedPassword = await bcrypt.hash(password, 10);
         const query = `INSERT INTO users_info (created_date, name, email, encrypted_password, age, sex ) 
                VALUES ('${year}-${month}-${day}', '${name}', '${email}', '${hashedPassword}', '${age}', '${sex}');`
         db.query('USE users', (err, result) => {
-            if (err) throw err;
+            if (err) {
+                console.log(err.message);
+                return;
+            }     
             db.query(query, (err,result) => {
-                if (err) throw err;   
-                console.log('Successfully done')
+                if (err) {
+                    console.log(err.message);
+                    return;
+                }
+                else {
+                    console.log('Successfully done')
+                    // // End connection to AWS RDS
+                    // db.end();
+                }
             });
         });
-        req.flash('success', 'You are registered!');
-        res.redirect('/login');
-    } catch {
-        res.redirect('/login/register');
+        const queryCheckEmail = `SELECT COUNT(*) AS count FROM users.users_info WHERE email = ?`;
+        db.query(queryCheckEmail, [email], (err, result) => {
+        if (err) {
+            console.error('Error executing the query: ' + err.message);
+            return;
+        }
+        const count = result[0].count;
+
+        if (count > 0) {
+            req.
+            res.redirect('/login/register');
+        } else {
+            res.redirect('/login');}
+        });
+    }}
+    catch(err) {
+        console.log('not working: ' + err.message);
     }
 });
 
@@ -220,8 +263,5 @@ router.post('/register', async (req, res) => {
 //     req.user = users[id];
 //     next();
 // })
-
-// End connection to AWS RDS
-db.end();
-
+    
 module.exports = router

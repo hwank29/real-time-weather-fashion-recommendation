@@ -22,7 +22,7 @@
     </div>
     <div>
         <label for ="sex">Sex</label>
-        <select id="sex_custom_input" name="sex_custom_input" onchange="sex_custom()">
+        <select id="sex" name="sex" onchange="sexCustom()">
             <option value="male">Male</option>
             <option value="female">Female</option>
             <option value="others">Others</option>
@@ -35,7 +35,7 @@
         <br>
     </div>
     
-    <button type="submit">Register</button>
+    <button type="submit" onclick="checkInput()">Register</button>
 </form>
 <a href="/login">Login</a>
 </body>
