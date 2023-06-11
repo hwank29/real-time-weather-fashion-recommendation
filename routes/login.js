@@ -5,8 +5,8 @@ const jwt = require('jsonwebtoken');
 const validator = require('validator');
 const cookieParser = require('cookie-parser');
 const notifier = require('node-notifier');
-require('dotenv').config();
-
+`require('dotenv').config();
+`
 const mysql = require('mysql2');
 const { start } = require('repl');
 
@@ -23,7 +23,6 @@ const db = mysql.createConnection({
     database: process.env.database
 });
 
-
 // Connect to AWS RDS
 db.connect((err) => {
     if (err) {
@@ -32,7 +31,8 @@ db.connect((err) => {
     }  
     else {
         console.log('Database Connected');
-        db.query('SELECT * FROM users.users_info;', (err, result) => {
+        const querrry= 'SELECT * FROM users.users_info;'
+        db.query(querrry, (err, result) => {
             if (err) console.log(err)
             console.log(result)
         })
@@ -52,13 +52,12 @@ function generateRefreshToken(user) {
 //     // When matching name and password in RDS
 //     const matchQuery = `SELECT EXISTS(SELECT 1 FROM users.users_info WHERE email = ${email} and password = ${password}) AS match_found;`;}
 
-
-
 // Middleware to verify jwt
 function authenticateToken(req, res, next) {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]
-    if (!token) return res.sendStatus(401);
+    const token = req.headers.authorization;
+    // const authHeader = req.headers['authorization'];
+    // const token = authHeader && authHeader.split(' ')[1]
+    if (!token) return res.status(401).send('Access Token not found');
 
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
         // Invalid Token
@@ -80,37 +79,41 @@ function authenticateToken(req, res, next) {
 
 
 // Login page
-router.get('/', (req, res) => {
+router.get('/',  (req, res) => {
     res.render('login/login', {title: 'loginPage'})
 });
 
 // Login verfication NOT encrypted
 router.post('/', (req, res) => {
-    const {name, email, password} = req.body;
-    const user = {email: email, 
-                  password: password};
-    const getUserQuery = `SELECT * FROM users.users_info WHERE email = '${email}'`;
+    const user = {email: req.body.email, 
+                  password: req.body.password};
+    const getUserQuery = `SELECT * FROM users.users_info WHERE email = '${user.email}';`;
     // Get user info from RDS that matches 
-    connection.query(getUserQuery, (err, result) => {
-        if (error) {
+    db.query(getUserQuery, async (err, result) => {
+        if (err) {
           // Handle the error
-          console.error(error);
+          console.error(err);
           return res.status(500).send('Error executing query');
         }
         const userInfo = result;
+        const hashedUserPassword = await bcrypt.hash(user.password, 10);
+
+        bcrypt.compare(hashedUserPassword, userInfo.password, (err, results) => {
+            console.log('there')
+            console.log(hashedUserPassword, userInfo)
+            if (err) {
+                console.log('failed');
+                return res.status(500).json({ message: 'Internal server error' });
+            }
+            if (!results) {
+                console.log('fail');
+                return res.status(401).json({ message: 'Authentication failed' });
+            }})
     })
-    
-    bcrypt.compare(password, user.password, (err, result) => {
-        if (err) {
-            return res.status(500).json({ message: 'Internal server error' });
-        }
-        if (!result) {
-            return res.status(401).json({ message: 'Authentication failed' });
-        }})
     
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
-
+    
     res.json({ accessToken: accessToken, refreshToken: refreshToken });  
 })
 
@@ -241,9 +244,9 @@ router.post('/register', async (req, res) => {
                 message: 'This email already registered',
             });
               
-            res.redirect('/login/register');
+            res.redirect('../register');
         } else {
-            res.redirect('/login');}
+            res.redirect('../');}
         });
     }}
     catch(err) {

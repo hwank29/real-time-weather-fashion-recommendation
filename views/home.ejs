@@ -1,20 +1,12 @@
-<%- include('../partials/header') %>
+<%- include('partials/header') %>
 
-<form action="/login/register" method="POST">
+<form action="/" method="POST">
     <div>
-        <h1 class="register-h1">Register</h1>
+        <h1 class="login-h1"></h1>
     </div>
     <div>
-        <label for ="name">Name</label>
-        <input type="text" id="name" name="name" required>
-    </div>
-    <div>
-        <label for ="email">Email</label>
-        <input type="email" id="email" name="email" required>
-    </div>
-    <div>
-        <label for ="password">Password</label>
-        <input type="password" id="password" name="password" required>
+        <label for ="city">Your City Name</label>
+        <input type="text" id="city" name="city" required>
     </div>
     <div>
         <label for ="age">Age</label>
@@ -34,9 +26,8 @@
         </div>
         <br>
     </div>
-    
-    <button type="submit" onclick="checkInput()">Register</button>
-    <a href="/login">Login Page</a>
+    <button type="submit">Recommend!</button>
 </form>
+
 </body>
 </html>

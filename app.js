@@ -2,7 +2,6 @@ const path = require('path');
 const express = require('express');
 const mysql = require('mysql');
 const bcrypt = require('bcrypt')
-const flash = require('express-flash')
 const session = require('express-session');
 require('dotenv').config();
 const users = [];
@@ -16,7 +15,6 @@ app.use(session({
   resave: false,
   saveUninitialized: true
 }));
-app.use(flash());
 
 // // Set MySQL Configuration
 // const db = mysql.createConnection({
@@ -39,21 +37,19 @@ app.use(flash());
 app.set('view engine', 'ejs');
 app.set('views', 'views');
 
-app.get('/', (req, res) => {
-    res.render("default.ejs", {title: 'deafultPage'})
-});
-
-
+// import router from routes/home.js
+const homeRouter = require('./routes/home');
 // import router from routes/login.js
 const loginRouter = require('./routes/login');
 // import router from routes/user.js
 const userRouter = require('./routes/users');
-const { configDotenv } = require('dotenv');
+
 app.use('/login', loginRouter);
 app.use('/users', userRouter);
+app.use('/', homeRouter);
 
-app.listen(3000, ()=> {
-  console.log('Server is running on port 3000');
+app.listen(5000, ()=> {
+  console.log('Server is running on port 5000');
 });
 
 // fetch('https://api.example.com/data')
