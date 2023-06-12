@@ -1,17 +1,17 @@
 require('dotenv').config();
 const express = require('express');
-// import openAI API
 const { Configuration, OpenAIApi } = require("openai");
+
 const configuration = new Configuration({
-    organization: "org-DtZcIZLgIWPcHk7DX7PVMHmU",
-    apiKey: process.env.OPENAI_API_KEY
+  organization: "org-DtZcIZLgIWPcHk7DX7PVMHmU",
+  apiKey: process.env.OPENAI_API_KEY
 });
 const openai = new OpenAIApi(configuration);
 
 const router = express.Router();
 
 router.get('/', (req, res) => {
-    res.render("home.ejs", {title: 'homePage'})
+  res.render("home", { title: 'homePage' });
 });
 
 async function fetchToWeatherAPI(city) {
@@ -20,8 +20,7 @@ async function fetchToWeatherAPI(city) {
     const data = await response.json();
     const temp = data['main']['temp'];
     const desc = data['weather'][0]['description'];
-    const humidity = data['main']['humidity']
-    console.log([temp, desc]);
+    const humidity = data['main']['humidity'];
     return [temp, desc, humidity];
   } catch (error) {
     console.error('FetchError:', error);
@@ -30,31 +29,45 @@ async function fetchToWeatherAPI(city) {
 }
 
 router.post('/', async (req, res) => {
-    const { city, age} = req.body;
-    if (req.body.sex == "others") {
-        sex = req.body.customValue;
-    } else {
-        sex = req.body.sex;
-    }
+  const { city, age } = req.body;
+  let sex;
+  if (req.body.sex == "others") {
+    sex = req.body.customValue;
+  } else {
+    sex = req.body.sex;
+  }
+
+  try {
+    const [temp, desc, humidity] = await fetchToWeatherAPI(city);
     try {
-        const weatherArray = await fetchToWeatherAPI(city);
-        const [temp, desc, humidity] = weatherArray
-        res.json({ temp: temp, desc:desc, humidity:humidity});
-      } catch (error) {
-        console.error('HereError:', error);
-        res.status(500).json({ error: 'Failed to fetch weather data' });
-      }
-    openai.chatCompletion.create({
-        model: 'gpt-3.5-turbo',
+      const completion = await openai.createChatCompletion({
+        model: "gpt-3.5-turbo",
         messages: [
-        { role: 'system', content: 'You are a helpful assistant.' },
-        { role: 'user', content: 'Who won the world series in 2020?' },
+          { role: "system", content: "You are a helpful assistant" },
+          {
+            role: "user",
+            content: `Can you do a fashion recommendation? I am ${age} years ${sex}. 
+                      I live in ${city}. Today's weather is ${desc} with temperature at 
+                      ${temp} Kelvin and humidity at ${humidity}. Give the answer in brief bullet points`
+          }
         ],
-    })
-    
+        temperature: 0.4
+      });
+      const strMessage = JSON.stringify(completion.data.choices[0].message.content, (key, value) => {
+        if (typeof value === "string") {
+          return value.replace(/\n/g, "<br>");
+        }
+        return value;
+      });
+      res.render('result.ejs', {title: 'resultPage', city, strMessage});
+    } catch (error) {
+      console.error("OpenAI API Error:", error);
+      res.status(500).json({ error: "Failed to fetch fashion recommendation" });
+    }
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).json({ error: "Failed to fetch weather data" });
+  }
+});
 
-
-    
-})
-// export router to app 
-module.exports = router
+module.exports = router;

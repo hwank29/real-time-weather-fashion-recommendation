@@ -1,11 +1,15 @@
 html {
     font-family: Lato, sans-serif;
     font-size: 15px;
+    background-image: linear-gradient(rgb(45, 110, 224), rgb(220, 245, 255));
+
 }
 body {
     margin:0;
-    background: #fafafa;
-}
+    /* background-color: white; */
+    height: 100vh;
+    padding: 0;
+  }
 
 header nav li {
     margin-right: 30px;
@@ -24,20 +28,18 @@ header nav li:last-child {
     display: inline-flex;
     flex-direction: row;
     list-style: none;
-    color: white;
+    color: black;
     margin-left: 55%;
 }
 .navbar-list {
     padding: 0 20px;
-    background-color: skyblue;
+    background-color: rgb(10, 142, 194);
 }
 
 .home-list:hover, .about-list:hover{
     box-shadow: 10px 5px 5px blue;
     text-decoration: underline;
 }
-
-
 
 .title-list {
     display: inline-flex;
@@ -48,15 +50,18 @@ header nav li:last-child {
  .register-h1 login-h1{
   text-align: center;
  }
-
+.strmessage {
+  font: 5rem;
+}
   form{
-    width: 400px;
+    width: 500px;
     margin: 50px auto 0 auto;
     padding: 30px;
     box-shadow: 1px 2px 3px rgba(0,0,0,0.1);
     border-radius: 10px;
     background: rgb(182, 226, 250);
   }
+
   input{
     padding: 10px 12px;
     border-radius: 4px;
@@ -86,4 +91,33 @@ header nav li:last-child {
     margin: 10px 2px;
     font-size: 0.8em;
     font-weight: bold;
+  }
+  .footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+
+    background-color: #323f43;
+    padding: 20px 0;
+    margin-top: 50px;
+    border-top: 4px solid black;
+    color: white;
+    font-size: 1rem;
+  }
+
+  .footer-div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+  }
+  .footer__item {
+    margin-bottom: 5px;
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  
+  .footer__item:hover {
+    text-decoration: underline;
   }

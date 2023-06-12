@@ -43,10 +43,13 @@ const homeRouter = require('./routes/home');
 const loginRouter = require('./routes/login');
 // import router from routes/user.js
 const userRouter = require('./routes/users');
+// import router from routes/about.js
+const aboutRouter = require('./routes/about');
 
 app.use('/login', loginRouter);
 app.use('/users', userRouter);
 app.use('/', homeRouter);
+app.use('/about', aboutRouter);
 
 app.listen(5000, ()=> {
   console.log('Server is running on port 5000');
