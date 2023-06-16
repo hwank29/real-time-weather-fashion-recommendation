@@ -1,0 +1,11 @@
+<%- include('partials/header') %>
+
+<form action="/?city=<%- city %>" method="POST">
+    <div>
+        <% if (strMessage) { %>
+          <h1>Recommendation:</h2>
+          <p style="font-size:20px;"><%- strMessage %></p>
+        <% } %>
+    </div>
+</form>
+
