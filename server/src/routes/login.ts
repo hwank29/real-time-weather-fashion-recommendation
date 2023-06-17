@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 // import notifier from 'node-notifier';
 import mysql, { Connection } from 'mysql2';
 import dotenv from 'dotenv';
+import {authenticateToken, generateAccessToken, generateRefreshToken} from '../middleware/authMiddleware';
 dotenv.config({ path: 'src/.env' });
 
 const router: Router = express.Router();
@@ -13,12 +14,7 @@ router.use(express.static('src/public'));
 router.use(express.json());
 router.use(cookieParser());
 
-interface User {
-  email: string;
-  password: string;
-}
-
-interface TokenPayload {
+export interface User {
   email: string;
   password: string;
 }
@@ -32,7 +28,7 @@ const dbConfig = {
   database: process.env.database,
 };
 
-const db: Connection = mysql.createConnection(dbConfig);
+export const db: Connection = mysql.createConnection(dbConfig);
 
 // Connect to AWS RDS
 db.connect((err ) => {
@@ -41,54 +37,16 @@ db.connect((err ) => {
     return;
   }  
   else {
-      console.log('Database Connected');
+      // const querrrry= 
+      // `CREATE TABLE IF NOT EXISTS users.refreshTokenTable (refreshToken VARCHAR(255) PRIMARY KEY,created_date INT);`
+  
       const querrry= 'SELECT * FROM users.users_info;'
       db.query(querrry, (err, result) => {
-          if (err) console.log(err)
-          console.log(result)
+          if (err) console.log(err);
+          else {console.log(result);}
       })
   }
 });
-
-// Generate jwt lasting 30 minutes
-function generateAccessToken(user: TokenPayload): string {
-  return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET!, { expiresIn: '3d' });
-}
-
-// Generate jwt lasting 30 minutes
-function generateRefreshToken(user: TokenPayload): string {
-  return jwt.sign(user, process.env.REFRESH_TOKEN_SECRET!);
-}
-
-// Middleware to verify jwt
-async function authenticateToken(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<any> {
-  const token = req.headers.authorization;
-  // const authHeader = req.headers['authorization'];
-  // const token = authHeader && authHeader.split(' ')[1]
-  if (!token) return res.status(401).send('Access Token not found');
-
-  try {
-    const user = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!) as TokenPayload;
-
-    const currentTimestamp = Math.floor(Date.now() / 1000); // Convert current time to seconds
-    const expirationTimestamp = (user as any).exp; // expiration time left
-    const tokenExpiryThreshold = 60; // Renew token if it's going to expire in 60 seconds or less
-
-    if (expirationTimestamp - currentTimestamp <= tokenExpiryThreshold) {
-      // Access token is about to expire or has expired
-      const accessToken = generateAccessToken(user);
-      res.setHeader('Authorization', accessToken);
-    }
-
-    next();
-  } catch (err) {
-    res.sendStatus(403);
-  }
-}
 
 // Login page
 router.get('/', (req: Request, res: Response) => {
@@ -114,9 +72,6 @@ router.post('/', async (req: Request, res: Response) => {
         console.log('not registered');
         return res.status(500).send('Not registered');
       }
-      console.log(result);
-      console.log(`here ${user.password} and ${result[0].encrypted_password}`);
-      console.log(result[0].encrypted_password);
       const verifiedPassword = await bcrypt.compare(
         user.password,
         result[0].encrypted_password
@@ -127,50 +82,41 @@ router.post('/', async (req: Request, res: Response) => {
       }
       const accessToken = generateAccessToken({ email: user.email, password: user.password });
       const refreshToken = generateRefreshToken({ email: user.email, password: user.password });
-      res.status(200).json({
-        error: false,
-        accessToken,
-        refreshToken,
-        message: "Logged in sucessfully",
-      });
-  })}catch (err) {
+      // sets cooike on user's side lasting 1,800,000m,s equal to 30 minutes 
+      res.cookie('jwt', accessToken, { httpOnly: true, maxAge: 1800000 });
+      const insertRefreshTokenQuery = `INSERT INTO users.refreshTokenTable (refreshToken, created_date) VALUES ('${refreshToken}', '${Math.floor(Date.now() / 1000)}');`
+      db.query(insertRefreshTokenQuery, (err, result) => {})
+      res.redirect('/');
+    })}catch (err) {
 		console.log(err);
 		res.status(500).json({ error: true, message: "Internal Server Error" });
 	}})
-  
-// Token refresh
-router.post('/refresh', authenticateToken, (req: Request, res: Response) => {
-  const refreshToken: string = req.body.refreshToken;
-  if (!refreshToken) return res.sendStatus(401);
-  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!, (err: any, user: any) => {
-    if (err) return res.sendStatus(403);
-    const accessToken = generateAccessToken({ email: user.email, password: user.password });
-    res.json({ accessToken });
-  });
-});
+
 
 // Registration page
 router.get('/register', (req: Request, res: Response) => {
   res.render('login/register', { title: 'registerPage' });
 });
 
-// User registration
+// API endpoint for user registration
 router.post('/register', async (req: Request, res: Response) => {
-  const user: User = {
-    email: req.body.email,
-    password: req.body.password,
-  };
-
-  const userCount = `SELECT COUNT(*) AS count FROM users.users_info WHERE email = ('${user.email}');`;
-  db.query(userCount, [user.email], async (err, result) => {
+  let { name, email, password, age, city, sex} = req.body;  
+  if (req.body.sex === "others") {
+    sex = req.body.customValue;
+  } else {
+    sex = req.body.sex;
+  }
+  const userCount = `SELECT COUNT(*) AS count FROM users.users_info WHERE email = ('${email}');`;
+  db.query(userCount, async (err, result) => {
 
   if (typeof result == 'number' && result > 0) {
     return res.status(400).json({ message: 'Invalid email' });
   }
   const salt = await bcrypt.genSalt(Number(process.env.SALT));
-  const hashedUserPassword = await bcrypt.hash(user.password, salt);
+  const hashedUserPassword = await bcrypt.hash(password, salt);
 
-  const insertUserQuery = `INSERT INTO users.users_info (email, password) VALUES ('${user.email}', '${hashedUserPassword}');`;
+  const insertUserQuery = `INSERT INTO users.users_info (created_date, name, email, encrypted_password, age, sex, city) 
+                           VALUES ('${Math.floor(Date.now() / 1000)}', '${name}', '${email}', '${hashedUserPassword}', '${age}', '${sex}', '${city}');`;
 
   try {
     db.query(insertUserQuery);

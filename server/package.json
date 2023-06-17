@@ -96,7 +96,7 @@
   "scripts": {
     "tsc": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "ts-node --esm ./src/app.ts"
+    "start": "npx tsx src/app.ts"
   },
   "type": "module", 
   "author": "Hwanhee Kim",

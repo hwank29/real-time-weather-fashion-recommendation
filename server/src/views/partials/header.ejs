@@ -13,9 +13,16 @@
         <nav id="navbar-list" class="navbar-list">
             <h2 class="title-list">Fashion Recommender</h2>
             <ul class="nav-menu">
-                <li class="home-list"><a href="/">HOME</a></li>
-                <li class="about-list"><a href="/about">ABOUT</a></li>
-                <li class="login-list"><a href="login">Login</a></li>
-            </ul>
+                <% if (locals.user) { %>
+                  <li class="home-list"><a href="/">HOME</a></li>
+                  <li class="about-list"><a href="/about">ABOUT</a></li>
+                  <li class="login-list"><a href="/logout">LogOut</a></li>
+                <% } else { %>
+                  <li class="home-list"><a href="/">HOME</a></li>
+                  <li class="about-list"><a href="/about">ABOUT</a></li>
+                  <li class="login-list"><a href="login">Login</a></li>
+                <% } %>
+              </ul>
+
         </nav>
     </header>

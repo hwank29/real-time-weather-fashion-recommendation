@@ -18,12 +18,9 @@ function checkInput(event) {
         return false;
     }
     else {
-
         alert("You are registered!");
         window.location.href = "/login";
         return true;
-    
-
     }}
 
 // 

@@ -1,32 +1,47 @@
 <%- include('partials/header') %>
 
-<form action="/" method="POST">
+<form id="recommendation-form" action="/" method="POST">
+  <% if (locals.city) { %>
+    <h1>Recommendation:</h1>
+    <p style="font-size:18px;"><%- strMessage %></p>
+  <% } else { %>
     <div>
-        <h1 class="login-h1"></h1>
+      <h1 class="login-h1"></h1>
     </div>
     <div>
-        <label for ="city">Your City Name</label>
-        <input type="text" id="city" name="city" required>
+      <label for="city">Your City Name</label>
+      <input type="text" id="city" name="city" required>
     </div>
     <div>
-        <label for ="age">Age</label>
-        <input type="age" id="age" name="age" required>
+      <label for="age">Age</label>
+      <input type="age" id="age" name="age" required>
     </div>
     <div>
-        <label for ="sex">Sex</label>
-        <select id="sex" name="sex" onchange="sexCustom()">
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="others">Others</option>
-        </select>
-        <br>
-        <div id="customInput" style="display: none;">
-            <label for="customValue">Please Specifiy:</label>
-            <input type="text" id="customValue" name="customValue">
-        </div>
-        <br>
+      <label for="sex">Sex</label>
+      <select id="sex" name="sex" onchange="sexCustom()">
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+        <option value="others">Others</option>
+      </select>
+      <br>
+      <div id="customInput" style="display: none;">
+        <label for="customValue">Please Specify:</label>
+        <input type="text" id="customValue" name="customValue">
+      </div>
+      <br>
     </div>
-    <button class="submit_recommend"type="submit">Recommend!</button>
+    <button class="submit_recommend" type="submit">Recommend!</button>
+  <% } %>
 </form>
 
-<%- include('partials/footer')%>
+<%- include('partials/footer') %>
+
+<script>
+  // JavaScript code to modify the form action URL
+  const recommendationForm = document.getElementById('recommendation-form');
+  recommendationForm.addEventListener('submit', (event) => {
+    const cityInput = document.getElementById('city');
+    const cityValue = encodeURIComponent(cityInput.value);
+    recommendationForm.action = `/?city=${cityValue}`;
+  });
+</script>

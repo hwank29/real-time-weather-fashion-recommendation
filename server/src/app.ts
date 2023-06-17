@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import cookieParser from 'cookie-parser';
+import {authenticateToken } from './middleware/authMiddleware';
 
 
 interface User {
@@ -26,7 +27,7 @@ import homeRouter from './routes/home.ts';
 import loginRouter from './routes/login.ts';
 
 
-
+app.get('*', authenticateToken);
 app.use('/login', loginRouter);
 app.use('/', homeRouter);
 
