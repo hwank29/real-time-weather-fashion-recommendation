@@ -99,7 +99,7 @@ router.post('/', async (req: Request, res: Response) => {
     sex = req.body.sex;
   }
   try {
-    const strMessage = fetchopenAiAPI(city, age, sex)      
+    const strMessage = await fetchopenAiAPI(city, age, sex)      
       res.render('home.ejs', { title: 'resultPage', city, strMessage });
     } catch (error) {
       console.error("OpenAI API Error:", error);
